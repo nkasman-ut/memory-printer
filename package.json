@@ -1,0 +1,14 @@
+{
+  "name": "memory-peepbox",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A small memory interview, image generation, e-ink, and thermal print experience.",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env server/index.js",
+    "dev": "node --env-file=.env server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

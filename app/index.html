@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memory Peepbox</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section id="introPanel" class="intro-panel">
+        <div class="intro-text">
+          <p>breathe in.</p>
+          <p>this is an attempt to help you hold on to some memories.</p>
+          <p>keep a memento if you wish.</p>
+        </div>
+        <div class="actions">
+          <button id="startButton" type="button">Begin</button>
+        </div>
+      </section>
+
+      <section class="interview" aria-live="polite" hidden>
+        <div class="status">
+          <span id="stepLabel">Question 1 of 5</span>
+          <span id="modeLabel">Interview</span>
+        </div>
+
+        <div class="prompt-stack">
+          <p class="kicker">Memory Peepbox</p>
+          <h1 id="questionText">Think of a memory you wish you had a photograph of. Where were you?</h1>
+          <p id="helperText">Answer in fragments or full sentences. Specific textures, light, sounds, and small objects help the image feel true.</p>
+        </div>
+
+        <form id="answerForm" class="answer-form">
+          <div id="voiceInput" class="voice-input">
+            <button id="micButton" type="button" class="mic-button" aria-label="Speak your answer">
+              <span class="mic-icon">&#9679;</span>
+              <span id="micLabel">Hold to speak</span>
+            </button>
+            <p id="transcript" class="transcript"></p>
+            <button id="typeToggle" type="button" class="type-toggle">Type instead</button>
+          </div>
+          <textarea id="answerInput" name="answer" rows="5" autocomplete="off" hidden></textarea>
+          <fieldset id="feelingOptions" class="feeling-options" hidden>
+            <legend>Choose up to three</legend>
+          </fieldset>
+          <div class="actions">
+            <button id="backButton" type="button" class="secondary" disabled>Back</button>
+            <button id="nextButton" type="submit">Continue</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="resultPanel" class="result-panel" hidden>
+        <div class="status">
+          <span>Memory Peepbox</span>
+          <span id="generationState">Finding your memory</span>
+        </div>
+
+        <div class="peephole-instruction">
+          <p class="kicker" id="instructionKicker">Your memory is being made</p>
+          <h1 id="instructionText">Look through<br>the box</h1>
+          <p class="instruction-helper" id="instructionHelper">Press your eye to the peephole when you're ready.</p>
+        </div>
+
+        <div id="einkPreview" class="eink-preview" hidden>
+          <img id="einkImage" src="" alt="Memory preview" />
+        </div>
+
+        <div class="actions">
+          <button id="printButton" type="button" class="secondary" hidden>Prepare print strip</button>
+          <button id="resetButton" type="button">Relive a new memory</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
