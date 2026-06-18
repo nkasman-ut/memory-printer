@@ -34,9 +34,9 @@ export function buildGenerationPrompt(memory) {
   return `
 A wide horizontal strip divided into EXACTLY 2 equal rectangular panels side by side, separated by a single thin black dividing line. Landscape orientation. The final image will be displayed on a 400x300 pixel e-ink screen — design to fill that frame completely with no overflow.
 
-Style: Mexican woodcut print in the tradition of the Taller de Gráfica Popular. Almost entirely black background with white lines and shapes gouged and carved into it — not black lines on white, but white marks cut from darkness. Rough, irregular tool marks. Visible gouging. Dense, gestural, expressive. Edges are never clean or smooth — they are jagged, hand-cut, imperfect. High contrast. No grey tones. No color. No photorealism. The darkness is the material; the white is what was removed.
+Style: Woodcut print type illustration. Entirely black background with white lines and shapes gouged and carved into it — not black lines on white, but white marks cut from darkness. Rough, irregular tool marks. Visible gouging. Dense, gestural, expressive. Edges are never clean or smooth — they are jagged, hand-cut, imperfect. High contrast. No grey tones. No color. No photorealism. The darkness is the material; the white is what was removed.
 
-No people. No figures. No silhouettes of humans or animals. Place, texture, light, and atmosphere only.
+Absolutely no detailed faces, heads, portraits. If there are figures, bodies, hands, or silhouettes of any human or animal form — keep them vague and not detailed. 
 
 Draw only what the person explicitly described. Do not invent, add, or assume any objects, architectural details, vegetation, furniture, or elements that are not directly mentioned in the memory content below. If something is not stated, leave it as darkness or texture — do not fill it in.
 

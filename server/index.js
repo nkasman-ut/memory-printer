@@ -3,13 +3,14 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildDraftMemory, buildGenerationPrompt } from "./memoryPrompt.js";
+import { exportForEink } from "./imageExport.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
 const appDir = join(root, "app");
 const outputDir = join(root, "outputs", "generated");
 const port = Number(process.env.PORT || 5173);
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "0.0.0.0";
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -19,7 +20,8 @@ const contentTypes = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
-  ".svg": "image/svg+xml"
+  ".svg": "image/svg+xml",
+  ".bin": "application/octet-stream"
 };
 
 function sendJson(response, status, data) {
@@ -104,10 +106,20 @@ async function createGeneratedMemory(payload) {
 
   console.log("[memory] Image received, saving to disk...");
   await mkdir(outputDir, { recursive: true });
-  const fileName = `memory-${Date.now()}.png`;
+  const timestamp = Date.now();
+  const fileName = `memory-${timestamp}.png`;
   const filePath = join(outputDir, fileName);
-  await writeFile(filePath, Buffer.from(b64, "base64"));
+  const pngBuffer = Buffer.from(b64, "base64");
+  await writeFile(filePath, pngBuffer);
   console.log(`[memory] Saved to ${filePath}`);
+
+  try {
+    await exportForEink(pngBuffer, outputDir);
+    await writeFile(join(outputDir, "latest.json"), JSON.stringify({ id: Math.floor(timestamp / 1000) }));
+    console.log("[memory] E-ink binary exported");
+  } catch (err) {
+    console.warn("[memory] E-ink export failed (non-fatal):", err.message);
+  }
 
   return {
     ...draft,
@@ -187,6 +199,16 @@ Reply with only the adapted question text, or the word null. Nothing else.`
       const data = await completion.json();
       const text = data.choices?.[0]?.message?.content?.trim();
       sendJson(response, 200, { question: text === "null" ? null : (text || nextQuestion) });
+      return;
+    }
+
+    if (request.method === "GET" && request.url === "/api/status") {
+      try {
+        const raw = await readFile(join(outputDir, "latest.json"), "utf8");
+        sendJson(response, 200, JSON.parse(raw));
+      } catch {
+        sendJson(response, 200, { id: null });
+      }
       return;
     }
 
