@@ -122,8 +122,8 @@ typeToggle.addEventListener("click", () => {
   isTypingMode = !isTypingMode;
   if (recognition && micButton.classList.contains("listening")) recognition.stop();
   voiceInput.hidden = isTypingMode;
-  answerInput.hidden = isTypingMode ? false : true;
-  typeToggle.hidden = isTypingMode;
+  answerInput.hidden = !isTypingMode;
+  typeToggle.textContent = isTypingMode ? "Use voice instead" : "Type instead";
   if (!isTypingMode) answerInput.value = transcript.textContent;
   if (isTypingMode) answerInput.focus();
 });
@@ -136,6 +136,7 @@ function resetVoiceState() {
   voiceInput.hidden = false;
   typeToggle.hidden = false;
   answerInput.hidden = true;
+  typeToggle.textContent = "Type instead";
   micLabel.textContent = "Hold to speak";
   micButton.classList.remove("listening");
 }
