@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>E-ink Controller</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1a1a; color: #eee; font-family: monospace; padding: 32px; display: flex; gap: 48px; align-items: flex-start; }
+
+    .sidebar { display: flex; flex-direction: column; gap: 24px; width: 220px; flex-shrink: 0; }
+    h1 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #555; }
+    .section-label { font-size: 10px; color: #444; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .slider-row { display: flex; flex-direction: column; gap: 6px; }
+    .slider-top { display: flex; justify-content: space-between; align-items: baseline; }
+    .slider-top .label { font-size: 11px; color: #888; }
+    .slider-top .val { color: #eee; font-size: 13px; }
+    .slider-hint { display: flex; justify-content: space-between; font-size: 10px; color: #333; }
+    input[type=range] { width: 100%; accent-color: #fff; }
+
+    .generate-btn {
+      background: #2a2a2a; border: 1px solid #444; color: #aaa;
+      padding: 10px; font-family: monospace; font-size: 11px;
+      cursor: pointer; width: 100%; letter-spacing: 0.05em;
+    }
+    .generate-btn:hover { border-color: #888; color: #fff; }
+    .generate-btn.loading { opacity: 0.4; cursor: wait; }
+
+    .send-btn {
+      background: #fff; color: #000; border: none;
+      padding: 12px; font-family: monospace; font-size: 12px;
+      cursor: pointer; width: 100%; letter-spacing: 0.05em;
+    }
+    .send-btn:disabled { background: #444; color: #888; cursor: wait; }
+
+    .status { font-size: 10px; color: #555; min-height: 14px; }
+
+    .preview-wrap {
+      width: 400px; height: 300px;
+      border: 1px solid #2a2a2a; background: #111;
+      position: relative; flex-shrink: 0;
+    }
+    .preview-wrap img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    .overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #333; background: #111;
+    }
+    .preview-label { font-size: 10px; color: #333; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>E-ink Controller</h1>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="section-label">Generate test image</div>
+      <button class="generate-btn" id="generateBtn">Generate dithered sample</button>
+      <div class="status" id="genStatus"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="section-label">Dither settings</div>
+      <div class="slider-row">
+        <div class="slider-top">
+          <span class="label">pixel size</span>
+          <span class="val" id="pixelSizeVal">1</span>
+        </div>
+        <input type="range" id="pixelSize" min="1" max="12" value="1" step="1" />
+        <div class="slider-hint"><span>fine (1px)</span><span>chunky (12px)</span></div>
+      </div>
+    </div>
+
+    <button class="send-btn" id="sendBtn">Send to display</button>
+    <div class="status" id="sendStatus"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="preview-wrap">
+      <div class="overlay" id="overlay">generate a sample or run the interview</div>
+      <img id="preview" src="" alt="" style="display:none" />
+    </div>
+    <div class="preview-label" id="previewLabel"></div>
+  </div>
+
+  <script>
+    const pixelSize = document.getElementById("pixelSize");
+    const pixelSizeVal = document.getElementById("pixelSizeVal");
+    const previewImg = document.getElementById("preview");
+    const overlay = document.getElementById("overlay");
+    const generateBtn = document.getElementById("generateBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const sendStatus = document.getElementById("sendStatus");
+    const genStatus = document.getElementById("genStatus");
+    const previewLabel = document.getElementById("previewLabel");
+
+    let currentFile = null;
+    let debounceTimer = null;
+
+    updatePreview();
+
+    function updatePreview() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const ps = pixelSize.value;
+        const fileParam = currentFile ? `&file=${encodeURIComponent(currentFile)}` : "";
+        const src = `/api/eink-preview?pixelSize=${ps}${fileParam}&t=${Date.now()}`;
+        overlay.textContent = "processing...";
+        overlay.style.display = "flex";
+        const img = new Image();
+        img.onload = () => {
+          previewImg.src = src;
+          previewImg.style.display = "block";
+          overlay.style.display = "none";
+        };
+        img.onerror = () => {
+          previewImg.style.display = "none";
+          overlay.textContent = "no image yet — generate one or run the interview";
+          overlay.style.display = "flex";
+        };
+        img.src = src;
+      }, 120);
+    }
+
+    pixelSize.addEventListener("input", () => {
+      pixelSizeVal.textContent = pixelSize.value;
+      updatePreview();
+    });
+
+    generateBtn.addEventListener("click", async () => {
+      generateBtn.classList.add("loading");
+      generateBtn.disabled = true;
+      genStatus.textContent = "generating... (~20s)";
+      try {
+        const res = await fetch("/api/generate-style-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ style: "dithered" })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          currentFile = data.file;
+          previewLabel.textContent = data.file;
+          genStatus.textContent = "done";
+          updatePreview();
+        } else {
+          genStatus.textContent = `error: ${data.error}`;
+        }
+      } catch {
+        genStatus.textContent = "request failed";
+      } finally {
+        generateBtn.classList.remove("loading");
+        generateBtn.disabled = false;
+      }
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      sendBtn.disabled = true;
+      sendStatus.textContent = "sending...";
+      try {
+        const body = { pixelSize: Number(pixelSize.value) };
+        if (currentFile) body.file = currentFile;
+        const res = await fetch("/api/eink-send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        sendStatus.textContent = data.ok ? "sent — display updates in ~5s" : "error";
+      } catch {
+        sendStatus.textContent = "request failed";
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

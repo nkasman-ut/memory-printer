@@ -2,8 +2,9 @@ import { createServer } from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildDraftMemory, buildGenerationPrompt } from "./memoryPrompt.js";
-import { exportForEink } from "./imageExport.js";
+import { buildDraftMemory, buildGenerationPrompt, STYLE_PRESETS, TEST_MEMORY } from "./memoryPrompt.js";
+import { exportForEink, previewForEink } from "./imageExport.js";
+import { readdir } from "node:fs/promises";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -114,7 +115,7 @@ async function createGeneratedMemory(payload) {
   console.log(`[memory] Saved to ${filePath}`);
 
   try {
-    await exportForEink(pngBuffer, outputDir);
+    await exportForEink(pngBuffer, outputDir, {});
     await writeFile(join(outputDir, "latest.json"), JSON.stringify({ id: Math.floor(timestamp / 1000) }));
     console.log("[memory] E-ink binary exported");
   } catch (err) {
@@ -209,6 +210,68 @@ Reply with only the adapted question text, or the word null. Nothing else.`
       } catch {
         sendJson(response, 200, { id: null });
       }
+      return;
+    }
+
+
+    if (request.method === "POST" && request.url === "/api/generate-style-test") {
+      const { style } = await readJson(request);
+      if (!STYLE_PRESETS[style]) { sendJson(response, 400, { error: "Unknown style" }); return; }
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) { sendJson(response, 400, { error: "No API key" }); return; }
+      const prompt = buildGenerationPrompt(TEST_MEMORY, style);
+      const oaiRes = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: "gpt-image-1", prompt, n: 1, size: "1536x1024" })
+      });
+      if (!oaiRes.ok) { sendJson(response, 500, { error: await oaiRes.text() }); return; }
+      const data = await oaiRes.json();
+      const b64 = data.data?.[0]?.b64_json;
+      if (!b64) { sendJson(response, 500, { error: "No image returned" }); return; }
+      await mkdir(outputDir, { recursive: true });
+      const fileName = `style-test-${style}.png`;
+      await writeFile(join(outputDir, fileName), Buffer.from(b64, "base64"));
+      sendJson(response, 200, { ok: true, file: fileName });
+      return;
+    }
+
+    if (request.method === "GET" && request.url?.startsWith("/api/eink-preview")) {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      const pixelSize = Math.max(1, Math.min(16, Number(url.searchParams.get("pixelSize") || 1)));
+      const fileParam = url.searchParams.get("file");
+      let filePath;
+      if (fileParam) {
+        filePath = normalize(join(outputDir, fileParam));
+        if (!filePath.startsWith(outputDir)) { response.writeHead(403); response.end("Forbidden"); return; }
+      } else {
+        const files = (await readdir(outputDir)).filter(f => f.endsWith(".png")).sort();
+        if (!files.length) { response.writeHead(404); response.end("No images yet"); return; }
+        filePath = join(outputDir, files.at(-1));
+      }
+      const pngBuffer = await readFile(filePath);
+      const preview = await previewForEink(pngBuffer, { pixelSize });
+      response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-store" });
+      response.end(preview);
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/api/eink-send") {
+      const { pixelSize, file } = await readJson(request);
+      const ps = Math.max(1, Math.min(16, Number(pixelSize || 1)));
+      let filePath;
+      if (file) {
+        filePath = normalize(join(outputDir, file));
+        if (!filePath.startsWith(outputDir)) { sendJson(response, 403, { error: "Forbidden" }); return; }
+      } else {
+        const files = (await readdir(outputDir)).filter(f => f.endsWith(".png")).sort();
+        if (!files.length) { sendJson(response, 404, { error: "No images yet" }); return; }
+        filePath = join(outputDir, files.at(-1));
+      }
+      const pngBuffer = await readFile(filePath);
+      await exportForEink(pngBuffer, outputDir, { pixelSize: ps });
+      await writeFile(join(outputDir, "latest.json"), JSON.stringify({ id: Math.floor(Date.now() / 1000) }));
+      sendJson(response, 200, { ok: true, pixelSize: ps });
       return;
     }
 

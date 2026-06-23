@@ -9,10 +9,17 @@
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
-const char* WIFI_SSID     = "sandbox370";
-const char* WIFI_PASSWORD = "+s0a+s03!2gether?";
+// -- ITP
+// const char* WIFI_SSID     = "sandbox370";
+// const char* WIFI_PASSWORD = "+s0a+s03!2gether?";
 
-const char* SERVER_BASE = "http://10.23.11.35:5173";
+// const char* SERVER_BASE = "http://10.23.11.35:5173";
+
+// - HOME
+const char* WIFI_SSID     = "SpectrumSetup-A8";
+const char* WIFI_PASSWORD = "stealthtent445";
+
+const char* SERVER_BASE = "http://192.168.1.90:5173";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
