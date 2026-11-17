@@ -3,3 +3,6 @@
 node_modules/
 work/
 outputs/generated/
+
+# ESP32 Wi-Fi credentials (copy secrets.example.h to secrets.h)
+hardware/esp32/memory_peepbox/secrets.h
