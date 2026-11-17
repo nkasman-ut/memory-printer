@@ -12,6 +12,8 @@ const appDir = join(root, "app");
 const outputDir = join(root, "outputs", "generated");
 const port = Number(process.env.PORT || 5173);
 const host = process.env.HOST || "0.0.0.0";
+// gpt-image-1 was shut down by OpenAI on 2026-10-23. Override with IMAGE_MODEL in .env.
+const imageModel = process.env.IMAGE_MODEL || "gpt-image-2.6-flare";
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -22,7 +24,11 @@ const contentTypes = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
-  ".bin": "application/octet-stream"
+  ".bin": "application/octet-stream",
+  ".ttf": "font/ttf",
+  ".otf": "font/otf",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2"
 };
 
 function sendJson(response, status, data) {
@@ -80,7 +86,7 @@ async function createGeneratedMemory(payload) {
       "Authorization": `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: "gpt-image-1",
+      model: imageModel,
       prompt,
       n: 1,
       size: "1536x1024"
@@ -223,7 +229,7 @@ Reply with only the adapted question text, or the word null. Nothing else.`
       const oaiRes = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: "gpt-image-1", prompt, n: 1, size: "1536x1024" })
+        body: JSON.stringify({ model: imageModel, prompt, n: 1, size: "1536x1024" })
       });
       if (!oaiRes.ok) { sendJson(response, 500, { error: await oaiRes.text() }); return; }
       const data = await oaiRes.json();
