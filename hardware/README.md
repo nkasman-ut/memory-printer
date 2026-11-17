@@ -27,7 +27,7 @@ The ESP32 polls the local server every 5 seconds. When a new memory is generated
 
 1. Open `esp32/memory_peepbox.ino` in the Arduino IDE.
 2. Set your board to **ESP32 Dev Module** (Tools → Board → esp32).
-3. Edit the config section at the top of the sketch:
+3. Copy `secrets.example.h` to `secrets.h` in the same folder and fill it in. `secrets.h` is ignored by git, so passwords stay off GitHub:
    - `WIFI_SSID` / `WIFI_PASSWORD`
    - `SERVER_BASE` — your laptop's LAN IP (find it with `ifconfig | grep "inet "` on macOS), e.g. `http://192.168.1.42:5173`
 4. Flash the sketch.
